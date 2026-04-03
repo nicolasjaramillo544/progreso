@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de Progreso | NJ Coaching</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d; --surface: #141414; --surface2: #1c1c1c;
+    --border: #252525; --border2: #303030;
+    --accent: #7c6aff; --accent2: #ff6b6b; --accent3: #4ecdc4;
+    --text: #f0f0f0; --muted: #666; --muted2: #444;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+  body::after {
+    content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124,106,255,0.08) 0%, transparent 70%);
+  }
+
+  nav {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:1.2rem 2rem; border-bottom:1px solid var(--border);
+    position:sticky; top:0; background:rgba(13,13,13,0.96);
+    backdrop-filter:blur(12px); z-index:100;
+  }
+  .logo { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; letter-spacing:4px; }
+  .logo span { color:var(--accent); }
+  .nav-tag { font-family:'DM Mono',monospace; font-size:0.62rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+
+  .page { display:none; position:relative; z-index:1; animation:fadeUp 0.4s ease; }
+  .page.active { display:block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── LOGIN PAGE ── */
+  .login-wrap { max-width:480px; margin:0 auto; padding:4rem 1.5rem 6rem; text-align:center; }
+  .login-icon { font-size:3rem; margin-bottom:1.5rem; display:block; }
+  .login-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(2.5rem,8vw,4rem); letter-spacing:2px; line-height:0.95; margin-bottom:0.5rem; }
+  .login-title span { color:var(--accent); }
+  .login-sub { color:var(--muted); font-size:0.95rem; font-weight:300; margin-bottom:2.5rem; line-height:1.6; }
+
+  .input-field { margin-bottom:0.8rem; }
+  .input-field input {
+    width:100%; background:var(--surface); border:1px solid var(--border2);
+    border-radius:12px; padding:0.9rem 1.2rem; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:1rem; outline:none;
+    transition:border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-field input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,106,255,0.1); }
+  .input-field input::placeholder { color:var(--muted2); }
+
+  .primary-btn {
+    width:100%; background:var(--accent); color:#fff; border:none;
+    border-radius:12px; padding:0.95rem; font-family:'Bebas Neue',sans-serif;
+    font-size:1.3rem; letter-spacing:3px; cursor:pointer; transition:all 0.2s;
+    margin-top:0.3rem;
+  }
+  .primary-btn:hover:not(:disabled) { background:#9b8dff; transform:translateY(-2px); box-shadow:0 8px 24px rgba(124,106,255,0.3); }
+  .primary-btn:disabled { background:var(--border); color:var(--muted); cursor:not-allowed; transform:none; }
+
+  .error-msg { color:var(--accent2); font-size:0.82rem; margin-top:0.6rem; display:none; }
+  .error-msg.show { display:block; }
+
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* ── MAIN PAGE ── */
+  .main-wrap { max-width:680px; margin:0 auto; padding:2rem 1.5rem 6rem; }
+
+  .top-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:2rem; flex-wrap:wrap; gap:1rem; }
+  .welcome { font-family:'Bebas Neue',sans-serif; font-size:1.8rem; letter-spacing:2px; }
+  .welcome span { color:var(--accent); }
+  .logout-btn {
+    background:none; border:1px solid var(--border2); color:var(--muted);
+    padding:0.4rem 0.9rem; border-radius:8px; cursor:pointer;
+    font-family:'DM Mono',monospace; font-size:0.62rem; letter-spacing:1px; transition:all 0.2s;
+  }
+  .logout-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+
+  /* Tabs */
+  .tabs { display:flex; gap:0.4rem; margin-bottom:2rem; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:0.3rem; }
+  .tab {
+    flex:1; padding:0.6rem; border:none; background:none; color:var(--muted);
+    font-family:'DM Mono',monospace; font-size:0.68rem; letter-spacing:1.5px;
+    text-transform:uppercase; cursor:pointer; border-radius:9px; transition:all 0.2s;
+  }
+  .tab.active { background:var(--surface2); color:var(--text); }
+
+  .tab-content { display:none; }
+  .tab-content.active { display:block; animation:fadeUp 0.3s ease; }
+
+  /* ── REGISTRO TAB ── */
+  .reg-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.8rem; margin-bottom:1rem; }
+  .card-title { font-family:'DM Mono',monospace; font-size:0.62rem; letter-spacing:2.5px; text-transform:uppercase; color:var(--muted); margin-bottom:1.4rem; display:flex; align-items:center; gap:0.6rem; }
+  .card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+  .weight-input-wrap { position:relative; margin-bottom:1rem; }
+  .weight-input-wrap input {
+    width:100%; background:var(--surface2); border:1px solid var(--border2);
+    border-radius:12px; padding:1rem 4rem 1rem 1.2rem;
+    color:var(--text); font-family:'DM Sans',sans-serif;
+    font-size:1.8rem; font-weight:600; outline:none;
+    transition:border-color 0.2s;
+  }
+  .weight-input-wrap input:focus { border-color:var(--accent); }
+  .weight-input-wrap input::placeholder { color:var(--muted2); font-size:1.4rem; }
+  .weight-unit {
+    position:absolute; right:1.2rem; top:50%; transform:translateY(-50%);
+    font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);
+  }
+
+  .note-input {
+    width:100%; background:var(--surface2); border:1px solid var(--border);
+    border-radius:10px; padding:0.8rem 1rem; color:var(--text);
+    font-family:'DM Sans',sans-serif; font-size:0.9rem;
+    resize:none; min-height:70px; outline:none; transition:border-color 0.2s;
+    margin-bottom:1rem;
+  }
+  .note-input:focus { border-color:var(--accent); }
+  .note-input::placeholder { color:var(--muted2); }
+
+  /* ── HISTORIAL TAB ── */
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0.7rem; margin-bottom:1.5rem; }
+  @media(max-width:420px){ .stats-grid{grid-template-columns:1fr 1fr;} }
+  .stat-box { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1rem; text-align:center; }
+  .stat-icon { font-size:1.2rem; display:block; margin-bottom:0.3rem; }
+  .stat-lbl { font-family:'DM Mono',monospace; font-size:0.58rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:0.3rem; }
+  .stat-num { font-family:'Bebas Neue',sans-serif; font-size:1.6rem; line-height:1; }
+  .stat-num.positive { color:#4ecdc4; }
+  .stat-num.negative { color:var(--accent2); }
+  .stat-num.neutral  { color:var(--accent); }
+
+  /* Chart */
+  .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:1.5rem; margin-bottom:1rem; }
+  canvas { width:100% !important; }
+
+  /* History list */
+  .history-item {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:1rem 1.2rem; margin-bottom:0.6rem;
+    display:flex; align-items:center; gap:1rem;
+  }
+  .h-date { font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); min-width:70px; }
+  .h-weight { font-family:'Bebas Neue',sans-serif; font-size:1.5rem; color:var(--text); }
+  .h-unit { font-family:'DM Mono',monospace; font-size:0.7rem; color:var(--muted); }
+  .h-diff { margin-left:auto; font-family:'DM Mono',monospace; font-size:0.72rem; padding:0.2rem 0.5rem; border-radius:6px; }
+  .h-diff.up   { background:rgba(78,205,196,0.1); color:#4ecdc4; }
+  .h-diff.down { background:rgba(255,107,107,0.1); color:var(--accent2); }
+  .h-diff.same { background:var(--surface2); color:var(--muted); }
+  .h-note { font-size:0.78rem; color:var(--muted); font-style:italic; flex:1; }
+
+  .empty-state { background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:3rem 2rem; text-align:center; color:var(--muted); font-size:0.9rem; }
+
+  /* Success */
+  .success-toast {
+    position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(100px);
+    background:var(--accent); color:#fff; padding:0.8rem 1.5rem;
+    border-radius:12px; font-family:'DM Mono',monospace; font-size:0.75rem;
+    letter-spacing:1.5px; text-transform:uppercase; z-index:999;
+    transition:transform 0.3s ease; white-space:nowrap;
+  }
+  .success-toast.show { transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">NJ<span>·</span>COACHING</div>
+  <div class="nav-tag">Seguimiento Mensual</div>
+</nav>
+
+<!-- ── LOGIN ── -->
+<div class="page active" id="page-login">
+  <div class="login-wrap">
+    <span class="login-icon">📊</span>
+    <h1 class="login-title">TU<br><span>PROGRESO</span></h1>
+    <p class="login-sub">Registra tu peso mensual y visualiza tu evolución a lo largo del tiempo.</p>
+    <div class="input-field">
+      <input type="text" id="login-name" placeholder="Tu nombre completo" autocomplete="off"
+        onkeydown="if(event.key==='Enter') entrar()">
+    </div>
+    <button class="primary-btn" id="login-btn" onclick="entrar()">ENTRAR →</button>
+    <div class="error-msg" id="login-error">Por favor escribe tu nombre.</div>
+  </div>
+</div>
+
+<!-- ── MAIN ── -->
+<div class="page" id="page-main">
+  <div class="main-wrap">
+
+    <div class="top-bar">
+      <div class="welcome">HOLA, <span id="user-display">—</span></div>
+      <button class="logout-btn" onclick="salir()">← Salir</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('registro', this)">📝 Registrar</button>
+      <button class="tab" onclick="switchTab('historial', this)">📈 Mi progreso</button>
+    </div>
+
+    <!-- REGISTRO -->
+    <div class="tab-content active" id="tab-registro">
+      <div class="reg-card">
+        <div class="card-title">Registro mensual</div>
+        <div class="weight-input-wrap">
+          <input type="number" id="peso-input" placeholder="70.5" step="0.1" min="30" max="300">
+          <span class="weight-unit">kg</span>
+        </div>
+        <textarea class="note-input" id="nota-input" placeholder="Nota opcional — ¿cómo te has sentido este mes? ¿algo relevante?"></textarea>
+        <button class="primary-btn" id="save-btn" onclick="guardarRegistro()">GUARDAR REGISTRO →</button>
+        <div class="error-msg" id="save-error">Por favor ingresa tu peso.</div>
+      </div>
+    </div>
+
+    <!-- HISTORIAL -->
+    <div class="tab-content" id="tab-historial">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="chart-card" id="chart-card" style="display:none;">
+        <div class="card-title">Evolución de peso</div>
+        <canvas id="weight-chart" height="200"></canvas>
+      </div>
+      <div class="card-title" style="margin-bottom:1rem;">Registros anteriores</div>
+      <div id="history-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<div class="success-toast" id="toast">✓ REGISTRO GUARDADO</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  ⬇️  PEGA AQUÍ TU URL DE GOOGLE APPS SCRIPT
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz48_vV4zpDcY7lZLRwsjiOenehlUJNhoYGUckME8tBcvsvo5SYMJ4N4zFVTdVyzYp5/exec';
+// ═══════════════════════════════════════════════════════════════
+
+const STORAGE_KEY = 'progreso_v1';
+let currentUser   = null;
+let chartInstance = null;
+
+// ── LOCAL HELPERS ─────────────────────────────────────────────
+function getAll()    { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+function saveAll(d)  { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); }
+function getUserData(name) { const all = getAll(); return all[name.toLowerCase()] || []; }
+function saveUserData(name, data) { const all = getAll(); all[name.toLowerCase()] = data; saveAll(all); }
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function entrar() {
+  const name = document.getElementById('login-name').value.trim();
+  if (!name) { document.getElementById('login-error').classList.add('show'); return; }
+  document.getElementById('login-error').classList.remove('show');
+  currentUser = name;
+  document.getElementById('user-display').textContent = name.split(' ')[0].toUpperCase();
+  document.getElementById('page-login').classList.remove('active');
+  document.getElementById('page-main').classList.add('active');
+  renderHistorial();
+}
+
+function salir() {
+  currentUser = null;
+  document.getElementById('page-main').classList.remove('active');
+  document.getElementById('page-login').classList.add('active');
+  document.getElementById('login-name').value = '';
+  switchTab('registro', document.querySelector('.tab'));
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'historial') renderHistorial();
+}
+
+// ── GUARDAR REGISTRO ──────────────────────────────────────────
+async function guardarRegistro() {
+  const pesoVal = parseFloat(document.getElementById('peso-input').value);
+  const nota    = document.getElementById('nota-input').value.trim();
+  const errEl   = document.getElementById('save-error');
+  const btn     = document.getElementById('save-btn');
+
+  if (!pesoVal || pesoVal < 30) { errEl.classList.add('show'); return; }
+  errEl.classList.remove('show');
+
+  const registro = {
+    nombre: currentUser,
+    fecha:  new Date().toISOString(),
+    peso:   pesoVal,
+    nota:   nota || null
+  };
+
+  // Guardar local
+  const data = getUserData(currentUser);
+  data.unshift(registro);
+  saveUserData(currentUser, data);
+
+  // Enviar a Sheets
+  if (SCRIPT_URL) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Guardando…';
+    try {
+      await fetch(SCRIPT_URL, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(registro)
+      });
+    } catch(e) { console.warn('Sheets error:', e); }
+    btn.disabled = false;
+    btn.innerHTML = 'GUARDAR REGISTRO →';
+  }
+
+  document.getElementById('peso-input').value = '';
+  document.getElementById('nota-input').value  = '';
+  showToast();
+}
+
+function showToast() {
+  const t = document.getElementById('toast');
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── HISTORIAL ─────────────────────────────────────────────────
+function renderHistorial() {
+  const data = getUserData(currentUser).slice().reverse(); // oldest first for chart
+  const dataDesc = [...data].reverse(); // newest first for list
+
+  // Stats
+  const grid = document.getElementById('stats-grid');
+  if (data.length === 0) {
+    grid.innerHTML = '';
+    document.getElementById('chart-card').style.display = 'none';
+    document.getElementById('history-list').innerHTML =
+      '<div class="empty-state">Aún no tienes registros 📭<br><small>Haz tu primer registro en la pestaña "Registrar".</small></div>';
+    return;
+  }
+
+  const pesos   = data.map(d => d.peso);
+  const actual  = pesos[pesos.length - 1];
+  const inicial = pesos[0];
+  const diff    = (actual - inicial).toFixed(1);
+  const min     = Math.min(...pesos).toFixed(1);
+  const max     = Math.max(...pesos).toFixed(1);
+
+  const diffClass = diff > 0 ? 'positive' : diff < 0 ? 'negative' : 'neutral';
+  const diffSign  = diff > 0 ? '+' : '';
+
+  grid.innerHTML = `
+    <div class="stat-box"><span class="stat-icon">⚖️</span><span class="stat-lbl">Actual</span><span class="stat-num neutral">${actual}<small style="font-size:0.8rem;font-family:'DM Mono',monospace"> kg</small></span></div>
+    <div class="stat-box"><span class="stat-icon">📉</span><span class="stat-lbl">Cambio total</span><span class="stat-num ${diffClass}">${diffSign}${diff}<small style="font-size:0.8rem;font-family:'DM Mono',monospace"> kg</small></span></div>
+    <div class="stat-box"><span class="stat-icon">📋</span><span class="stat-lbl">Registros</span><span class="stat-num neutral">${data.length}</span></div>
+  `;
+
+  // Chart
+  document.getElementById('chart-card').style.display = 'block';
+  renderChart(data);
+
+  // List
+  document.getElementById('history-list').innerHTML = dataDesc.map((r, i) => {
+    const prev = dataDesc[i + 1];
+    const d    = new Date(r.fecha);
+    const dateStr = d.toLocaleDateString('es', { day:'numeric', month:'short', year:'numeric' });
+    let diffHtml = '';
+    if (prev) {
+      const delta = (r.peso - prev.peso).toFixed(1);
+      const cls   = delta > 0 ? 'up' : delta < 0 ? 'down' : 'same';
+      const sign  = delta > 0 ? '▲' : delta < 0 ? '▼' : '=';
+      diffHtml = `<span class="h-diff ${cls}">${sign} ${Math.abs(delta)} kg</span>`;
+    }
+    const noteHtml = r.nota ? `<br><span class="h-note">"${r.nota}"</span>` : '';
+    return `
+      <div class="history-item">
+        <span class="h-date">${dateStr}</span>
+        <span><span class="h-weight">${r.peso}</span> <span class="h-unit">kg</span>${noteHtml}</span>
+        ${diffHtml}
+      </div>`;
+  }).join('');
+}
+
+// ── CHART ─────────────────────────────────────────────────────
+function renderChart(data) {
+  const labels = data.map(d => {
+    const date = new Date(d.fecha);
+    return date.toLocaleDateString('es', { month:'short', year:'2-digit' });
+  });
+  const pesos = data.map(d => d.peso);
+
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+  const ctx = document.getElementById('weight-chart').getContext('2d');
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+  gradient.addColorStop(0, 'rgba(124,106,255,0.3)');
+  gradient.addColorStop(1, 'rgba(124,106,255,0)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: pesos,
+        borderColor: '#7c6aff',
+        backgroundColor: gradient,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#7c6aff',
+        pointBorderColor: '#0d0d0d',
+        pointBorderWidth: 2,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1c1c1c',
+          borderColor: '#303030',
+          borderWidth: 1,
+          titleColor: '#888',
+          bodyColor: '#f0f0f0',
+          titleFont: { family: 'DM Mono', size: 10 },
+          bodyFont: { family: 'Bebas Neue', size: 18 },
+          callbacks: { label: ctx => ` ${ctx.parsed.y} kg` }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555', font: { family: 'DM Mono', size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#555', font: { family: 'DM Mono', size: 10 }, callback: v => v + ' kg' }
+        }
+      }
+    }
+  });
+}
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+</body>
+</html>
